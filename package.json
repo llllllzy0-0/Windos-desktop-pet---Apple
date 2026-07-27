@@ -1,0 +1,26 @@
+{
+  "name": "apple-windows-desktop-pet",
+  "version": "1.0.0",
+  "description": "苹果——可拖动、会散步的 Windows 布偶猫桌宠",
+  "main": "src/main.js",
+  "author": "llllllzy0-0",
+  "license": "MIT",
+  "scripts": {
+    "start": "electron .",
+    "check": "node --check src/main.js && node --check src/preload.js && node --check src/renderer.js",
+    "build:win": "electron-builder --win portable nsis"
+  },
+  "devDependencies": {
+    "electron": "^37.2.0",
+    "electron-builder": "^26.0.12"
+  },
+  "build": {
+    "appId": "com.ziyu.apple.desktop.pet",
+    "productName": "苹果桌宠",
+    "asar": true,
+    "files": ["src/**/*", "assets/**/*", "package.json"],
+    "directories": {"output": "dist"},
+    "win": {"target": ["portable", "nsis"], "artifactName": "AppleDesktopPet-${version}-${arch}.${ext}"},
+    "nsis": {"oneClick": false, "allowToChangeInstallationDirectory": true, "createDesktopShortcut": true}
+  }
+}
