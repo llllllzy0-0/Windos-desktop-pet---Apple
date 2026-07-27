@@ -15,7 +15,10 @@ const actions = {
   'groom-2': { row: 8, count: 6, fps: 5, once: true },
   sleep: { row: 9, count: 6, fps: 2, once: true },
   jump: { row: 10, count: 6, fps: 7, once: true },
-  roll: { row: 11, count: 6, fps: 5, once: true }
+  roll: { row: 11, count: 6, fps: 5, once: true },
+  box: { row: 12, count: 8, fps: 5, once: true },
+  eat: { row: 13, count: 8, fps: 5, once: true },
+  drink: { row: 14, count: 8, fps: 5, once: true }
 };
 
 let current = 'idle';
@@ -23,6 +26,8 @@ let frame = 0;
 let timer;
 let dragging = false;
 let pointer = { x: 0, y: 0 };
+let dragDistance = 0;
+let suppressClick = false;
 let clickTimer;
 let lastInteraction = Date.now();
 let hasWeComNotification = false;
@@ -53,7 +58,10 @@ function play(action, forceOnce = false) {
 pet.addEventListener('pointerdown', event => {
   lastInteraction = Date.now();
   dragging = true;
+  dragDistance = 0;
+  suppressClick = false;
   pointer = { x: event.screenX, y: event.screenY };
+  window.petAPI.beginDrag(event.screenX, event.screenY);
   pet.setPointerCapture(event.pointerId);
 });
 
@@ -61,12 +69,21 @@ pet.addEventListener('pointermove', event => {
   if (!dragging) return;
   const dx = event.screenX - pointer.x;
   const dy = event.screenY - pointer.y;
+  dragDistance += Math.abs(dx) + Math.abs(dy);
+  if (dragDistance > 5) suppressClick = true;
   pointer = { x: event.screenX, y: event.screenY };
-  window.petAPI.move(dx, dy);
+  window.petAPI.drag(event.screenX, event.screenY);
 });
 
-pet.addEventListener('pointerup', () => { dragging = false; });
+function finishDrag() {
+  if (!dragging) return;
+  dragging = false;
+  window.petAPI.endDrag();
+}
+pet.addEventListener('pointerup', finishDrag);
+pet.addEventListener('pointercancel', finishDrag);
 pet.addEventListener('click', () => {
+  if (suppressClick) { suppressClick = false; return; }
   clearTimeout(clickTimer);
   clickTimer = setTimeout(() => play('jump'), 240);
 });
@@ -94,11 +111,10 @@ window.petAPI.onWeComNotification(() => {
   hint.classList.add('notification');
   play('jump');
 });
-
 setInterval(() => {
   if (dragging || current !== 'idle') return;
   if (Date.now() - lastInteraction > 60000) return play('sleep');
-  const choices = ['tail', 'play', 'scratch', 'groom-2', 'roll'];
+  const choices = ['tail', 'play', 'scratch', 'groom-2', 'roll', 'box', 'eat', 'drink'];
   play(choices[Math.floor(Math.random() * choices.length)], true);
 }, 12000);
 
