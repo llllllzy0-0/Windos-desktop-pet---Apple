@@ -106,9 +106,6 @@ pet.addEventListener('contextmenu', event => {
   play('groom');
 });
 window.petAPI.onAction(action => play(action));
-window.petAPI.onWeComNotification(() => {
-  play('jump');
-});
 setInterval(() => {
   if (dragging || current !== 'idle') return;
   if (Date.now() - lastInteraction > 60000) return play('sleep');
