@@ -64,7 +64,14 @@ pet.addEventListener('pointerdown', event => {
 });
 
 pet.addEventListener('pointermove', event => {
-  if (!dragging) return;
+  if (!dragging) {
+    const rect = pet.getBoundingClientRect();
+    const sourceX = Math.max(0, Math.min(183, Math.floor((event.clientX - rect.left) * 184 / rect.width)));
+    const sourceY = Math.max(0, Math.min(175, Math.floor((event.clientY - rect.top) * 176 / rect.height)));
+    const opaque = context.getImageData(sourceX, sourceY, 1, 1).data[3] > 24;
+    window.petAPI.setClickThrough(!opaque);
+    return;
+  }
   const dx = event.screenX - pointer.x;
   const dy = event.screenY - pointer.y;
   dragDistance += Math.abs(dx) + Math.abs(dy);
@@ -80,6 +87,9 @@ function finishDrag() {
 }
 pet.addEventListener('pointerup', finishDrag);
 pet.addEventListener('pointercancel', finishDrag);
+pet.addEventListener('mouseleave', () => {
+  if (!dragging) window.petAPI.setClickThrough(true);
+});
 pet.addEventListener('click', () => {
   if (suppressClick) { suppressClick = false; return; }
   clearTimeout(clickTimer);
