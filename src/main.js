@@ -1,4 +1,4 @@
-const { app, BrowserWindow, Menu, Tray, ipcMain, screen } = require('electron');
+const { app, BrowserWindow, Menu, Tray, ipcMain, screen, Notification } = require('electron');
 const path = require('path');
 const fs = require('fs');
 const { execFile } = require('child_process');
@@ -12,8 +12,8 @@ let weComReminderEnabled = true;
 let dragState = null;
 let settings = { autoStartEnabled: true };
 
-const WINDOW_WIDTH = 160;
-const WINDOW_HEIGHT = 140;
+const WINDOW_WIDTH = 90;
+const WINDOW_HEIGHT = 86;
 
 const hasSingleInstanceLock = app.requestSingleInstanceLock();
 if (!hasSingleInstanceLock) {
@@ -58,11 +58,24 @@ function queryWeComUnread() {
     { windowsHide: true, timeout: 2500 }, (_error, stdout) => {
       const unread = Number.parseInt(String(stdout || '').trim(), 10) || 0;
       if (unread > lastUnreadCount) {
-        win.showInactive();
-        win.webContents.send('wecom-notification');
+        showWeComNotification();
       }
       lastUnreadCount = unread;
     });
+}
+
+function showWeComNotification() {
+  if (!win || win.isDestroyed()) return;
+  win.webContents.send('wecom-notification');
+  if (Notification.isSupported()) {
+    const notification = new Notification({
+      title: '苹果提醒',
+      body: '企业微信有新消息',
+      silent: true
+    });
+    notification.on('click', focusWeCom);
+    notification.show();
+  }
 }
 
 function focusWeCom() {
@@ -138,14 +151,12 @@ function createTray() {
   // Electron's icon is a safe fallback; the pet remains controllable by right-click.
   tray = new Tray(path.join(__dirname, '..', 'assets', 'tray.png'));
   const menu = Menu.buildFromTemplate([
-    { label: '叫苹果出来', click: () => win.show() },
+    { label: '叫苹果出来', click: () => win.showInactive() },
     { label: '让苹果挥手', click: () => win.webContents.send('pet-action', 'wave') },
     { label: '让苹果挠头', click: () => win.webContents.send('pet-action', 'scratch') },
     { label: '企微消息提醒', type: 'checkbox', checked: true, click: item => { weComReminderEnabled = item.checked; } },
-    { label: '测试企微提醒', click: () => {
-      win.showInactive();
-      win.webContents.send('wecom-notification');
-    } },
+    { label: '测试企微提醒', click: () => showWeComNotification() },
+    { label: '打开企业微信', click: () => focusWeCom() },
     { label: '开机自动启动', type: 'checkbox', checked: settings.autoStartEnabled,
       click: item => {
         settings.autoStartEnabled = item.checked;
@@ -173,8 +184,7 @@ app.whenReady().then(() => {
 app.on('second-instance', () => {
   if (!win) return;
   if (win.isMinimized()) win.restore();
-  win.show();
-  win.focus();
+  win.showInactive();
 });
 
 ipcMain.on('begin-drag', (_event, point) => {

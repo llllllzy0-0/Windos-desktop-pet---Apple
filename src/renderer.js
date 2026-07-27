@@ -1,5 +1,4 @@
 const pet = document.querySelector('#pet');
-const hint = document.querySelector('#hint');
 const context = pet.getContext('2d');
 const atlas = new Image();
 atlas.src = '../assets/sprites.png';
@@ -30,7 +29,6 @@ let dragDistance = 0;
 let suppressClick = false;
 let clickTimer;
 let lastInteraction = Date.now();
-let hasWeComNotification = false;
 
 function drawFrame(action, index) {
   const config = actions[action];
@@ -90,13 +88,6 @@ pet.addEventListener('click', () => {
 pet.addEventListener('dblclick', () => {
   clearTimeout(clickTimer);
   lastInteraction = Date.now();
-  if (hasWeComNotification) {
-    hasWeComNotification = false;
-    hint.textContent = '苹果';
-    hint.classList.remove('notification');
-    window.petAPI.openWeCom();
-    return;
-  }
   play(Math.random() > .5 ? 'wave' : 'scratch');
 });
 pet.addEventListener('contextmenu', event => {
@@ -106,9 +97,6 @@ pet.addEventListener('contextmenu', event => {
 });
 window.petAPI.onAction(action => play(action));
 window.petAPI.onWeComNotification(() => {
-  hasWeComNotification = true;
-  hint.textContent = '企微有新消息';
-  hint.classList.add('notification');
   play('jump');
 });
 setInterval(() => {
